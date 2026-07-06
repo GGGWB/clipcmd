@@ -1,0 +1,59 @@
+name: Release
+
+# 推 v* 开头的 tag 时触发:编译 arm64 release 二进制,算 sha256,发 GitHub Release。
+# 后续要加 x86_64 / universal 二进制时,在这个文件里扩展 build matrix。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:   # 允许手动触发(调试用)
+
+permissions:
+  contents: write      # softprops/action-gh-release 需要这个权限来创建 release 和上传资产
+
+jobs:
+  build:
+    name: Build arm64 binary
+    runs-on: macos-15   # Apple Silicon runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release
+        run: swift build -c release
+
+      - name: Stage asset
+        run: |
+          # --show-bin-path 拿到准确路径,不硬编码 .build/release
+          BIN_PATH="$(swift build -c release --show-bin-path)"
+          mkdir -p artifacts
+          cp "$BIN_PATH/clipcmd" "artifacts/clipcmd-darwin-arm64"
+          file "artifacts/clipcmd-darwin-arm64"
+
+      - name: Compute sha256
+        run: |
+          cd artifacts
+          shasum -a 256 clipcmd-darwin-arm64 | tee sha256.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipcmd-arm64
+          path: artifacts/*
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: clipcmd-arm64
+          path: artifacts
+
+      - name: Create release & upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
