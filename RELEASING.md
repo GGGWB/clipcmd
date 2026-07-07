@@ -83,7 +83,11 @@ git push
 ### 5. 验证 brew install 能用
 
 ```bash
-brew install GGGWB/clipcmd/clipcmd
+brew tap GGGWB/clipcmd https://github.com/GGGWB/clipcmd
+brew install clipcmd
+# 首次会提示 untrusted tap,执行:
+brew trust GGGWB/clipcmd
+brew install clipcmd
 clipcmd --version   # 应输出 0.1.0
 ```
 

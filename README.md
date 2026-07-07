@@ -23,9 +23,11 @@ AI 给的命令不用再「复制 → 切终端 → 粘贴 → 回车」<br>
 ### 1️⃣ 安装
 
 ```bash
-brew install GGGWB/clipcmd/clipcmd
+brew tap GGGWB/clipcmd https://github.com/GGGWB/clipcmd
+brew install clipcmd
 ```
 
+> 首次安装会提示「untrusted tap」,按提示执行 `brew trust GGGWB/clipcmd` 即可(Homebrew 安全机制)。
 > 没装 Homebrew?也可以从源码编译或直接下二进制,见下方[完整教程](#-完整使用教程)。
 
 ### 2️⃣ 配置快捷键
@@ -55,7 +57,7 @@ git push       →  Cmd+Shift+T  →  🖥️ 终端弹出执行
 
 | 方式 | 命令 | 适合 |
 |---|---|---|
-| **Homebrew** | `brew install GGGWB/clipcmd/clipcmd` | 普通用户(推荐) |
+| **Homebrew** | `brew tap GGGWB/clipcmd … && brew install clipcmd` | 普通用户(推荐) |
 | **源码编译** | `git clone … && ./install.sh` | 想改代码 |
 | **直接下二进制** | [Releases](https://github.com/GGGWB/clipcmd/releases) | 不想装 brew/Xcode |
 

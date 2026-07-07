@@ -1,13 +1,10 @@
 # Homebrew Formula for clipcmd
 #
-# 用户安装:
-#   brew install GGGWB/clipcmd/clipcmd
-# 或先 tap:
-#   brew tap GGGWB/clipcmd
+# 用户安装(主仓库当 tap 用,需显式指定 URL,因为仓库名不带 homebrew- 前缀):
+#   brew tap GGGWB/clipcmd https://github.com/GGGWB/clipcmd
 #   brew install clipcmd
 #
-# 注意:首次发布前 sha256 是占位符。第一个 release 跑完后,
-#       从 release 页面的 sha256.txt 里取真实值替换下面的 PLACEHOLDER。
+# 首次安装会提示 untrusted tap,执行 brew trust GGGWB/clipcmd 即可。
 class Clipcmd < Formula
   desc "把剪贴板里的命令,一键送到终端执行"
   homepage "https://github.com/GGGWB/clipcmd"
