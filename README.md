@@ -1,205 +1,211 @@
-# clipcmd
+<div align="center">
+
+# ⌨️ clipcmd
+
+**把剪贴板里的命令,一键送到终端。**
+
+AI 给的命令不用再「复制 → 切终端 → 粘贴 → 回车」<br>
+复制完按一下快捷键,直接跑。
 
 [![CI](https://github.com/GGGWB/clipcmd/actions/workflows/ci.yml/badge.svg)](https://github.com/GGGWB/clipcmd/actions/workflows/ci.yml)
 [![Release](https://github.com/GGGWB/clipcmd/actions/workflows/release.yml/badge.svg)](https://github.com/GGGWB/clipcmd/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform: macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)](https://github.com/GGGWB/clipcmd)
-[![Arch: arm64](https://img.shields.io/badge/arch-arm64%20(Apple%20Silicon)-blue)](https://github.com/GGGWB/clipcmd)
+[![macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey)](#)
+[![arm64](https://img.shields.io/badge/arch-arm64%20(Apple%20Silicon)-blue)](#)
+[![Swift](https://img.shields.io/badge/Swift-6-orange.svg)](#)
 
-> 把剪贴板里的命令,一键送到终端执行。
-
-用 Claude Code / Codex / ZCode / ChatGPT 时,AI 给的命令总得「复制 → 切到终端 → 粘贴 → 回车」四步。`clipcmd` 把它缩成一步:**复制完,按一下快捷键**。
-
-- 🪶 **超轻量** —— 单文件 1.7MB 原生二进制,冷启动 8ms,零运行时依赖
-- 🛡 **智能放行** —— 默认放行所有命令,只拦真危险操作(`rm -rf /`、`dd 写磁盘`、fork 炸弹)和误复制的密码/密钥
-- 🖥 **多终端** —— Terminal.app / iTerm2 / Warp / kitty / Alacritty,自动检测
-- ⚡ **多种触发** —— 全局快捷键 / 右键菜单 / 直接命令行,任选
-- 🔓 **无权限骚扰** —— 复用 `osascript` 已有授权,装完即用,无需折腾 TCC
+</div>
 
 ---
 
-## 安装
+## 🚀 快速上手(推荐)
 
-### 方式一:Homebrew(推荐,无需 Xcode)
+### 1️⃣ 安装
 
 ```bash
 brew install GGGWB/clipcmd/clipcmd
 ```
 
-> 第一次发布后此命令才可用。release 页面有预编译 arm64 二进制,Homebrew 直接下载安装,不用本地编译。
+> 没装 Homebrew?也可以从源码编译或直接下二进制,见下方[完整教程](#-完整使用教程)。
 
-### 方式二:从源码编译
+### 2️⃣ 配置快捷键
+
+```bash
+# 装 skhd(轻量快捷键工具)+ 自动配置
+curl -fsSL https://raw.githubusercontent.com/GGGWB/clipcmd/master/scripts/setup-skhd.sh | bash
+```
+
+### 3️⃣ 用起来
+
+复制任意命令 → 按 `Cmd + Shift + T` → 自动在终端执行 ✨
+
+```
+你复制的内容        你按的键           结果
+─────────────────────────────────────────────────
+git push       →  Cmd+Shift+T  →  🖥️ 终端弹出执行
+```
+
+就这些。详细玩法和自定义见下面。
+
+---
+
+## 📖 完整使用教程
+
+### 📦 三种安装方式
+
+| 方式 | 命令 | 适合 |
+|---|---|---|
+| **Homebrew** | `brew install GGGWB/clipcmd/clipcmd` | 普通用户(推荐) |
+| **源码编译** | `git clone … && ./install.sh` | 想改代码 |
+| **直接下二进制** | [Releases](https://github.com/GGGWB/clipcmd/releases) | 不想装 brew/Xcode |
+
+<details>
+<summary>源码编译详细步骤</summary>
 
 ```bash
 git clone https://github.com/GGGWB/clipcmd.git
 cd clipcmd
 ./install.sh
 ```
+需要 Xcode Command Line Tools(`xcode-select --install`)。
+</details>
 
-`install.sh` 会编译 release、装到 `~/.local/bin`(无需 sudo)、打印后续配置指引。需要 Xcode Command Line Tools(`xcode-select --install`)。
+<details>
+<summary>直接下二进制</summary>
 
-### 方式三:直接下载二进制
-
-去 [Releases 页面](https://github.com/GGGWB/clipcmd/releases)下载 `clipcmd-darwin-arm64`,放到 PATH 里:
-
+去 [Releases](https://github.com/GGGWB/clipcmd/releases) 下载 `clipcmd-darwin-arm64`:
 ```bash
 chmod +x clipcmd-darwin-arm64
 mv clipcmd-darwin-arm64 ~/.local/bin/clipcmd
 ```
-
-> 如果 macOS 弹「无法验证开发者」提示,跑一下:`xattr -d com.apple.quarantine $(which clipcmd)`
-> (CLI 工具不需要签名,这条命令去掉隔离属性即可。)
-
----
-
-## 使用
-
-### 直接命令行
-
+如果 macOS 弹「无法验证开发者」:
 ```bash
-clipcmd send "git push"              # 发命令到默认终端(自动选已装的)
-clipcmd send --from-clipboard        # 发当前剪贴板内容
-clipcmd send --app iterm "ls -la"    # 指定 iTerm2
-clipcmd send --mode current          # 在当前窗口追加执行(多行命令顺序跑)
-clipcmd send --force "任意文本"        # 跳过识别,强制发送
-clipcmd check "git push"             # 检测一段文本是否像命令
-clipcmd terminal list                # 列出已安装的终端
+xattr -d com.apple.quarantine $(which clipcmd)
 ```
+</details>
 
+### 🎯 触发方式(三种,任选)
 
-**完整参数:**
+| 触发方式 | 安装命令 | 体验 |
+|---|---|---|
+| **⌨️ 全局快捷键**(推荐) | `./scripts/setup-skhd.sh` | 最快,按一下就发 |
+| **🖱️ 右键 Services 菜单** | `./scripts/setup-quickaction.sh` | 零依赖,选中文字右键即可 |
+| **💻 直接命令行** | 无需配置 | 最基础 |
 
-```
-clipcmd send [<命令>] [选项]
-  <命令>              要执行的命令;省略则读剪贴板
-  -c, --from-clipboard 从剪贴板读取(忽略位置参数)
-  -a, --app <名称>     目标终端:auto(默认)/ iterm / terminal / warp / kitty / alacritty
-  --mode <模式>        tab(默认)/ window / current
-  -f, --force          跳过命令识别,强制发送
-```
+<details>
+<summary>⌨️ 全局快捷键详解(两个快捷键)</summary>
 
-### 推荐工作流(配合 AI 编程工具)
+`setup-skhd.sh` 会自动装 skhd 并配置。默认两个快捷键:
 
-```
-1. AI 给出命令 → 你 Cmd+C 复制
-2. 按快捷键(或右键服务)→ 命令自动发到终端执行
-```
+| 快捷键 | 行为 |
+|---|---|
+| `Cmd + Shift + T` | 在**当前** iTerm2 窗口追加执行(多行命令顺序跑) |
+| `Cmd + Shift + O` | **新开** iTerm2 标签执行 |
 
----
+改快捷键:编辑 `~/.skhdrc` 里 `# >>> clipcmd >>>` 标记之间的行,然后 `launchctl kickstart -k gui/$(id -u)/com.koekeishiya.skhd` 重载。
 
-## 配置触发方式(二选一或都装)
+> skhd 首次运行需要「辅助功能」权限(全局热键必须),脚本会引导你授权。
+</details>
 
-`clipcmd` 本身是个被动 CLI。要实现「按一下就发」,装一个触发壳。两种都支持,各自独立:
-
-### 方式 A:全局快捷键(推荐)
-
-用 [skhd](https://github.com/koekeishiya/skhd)——macOS 上最轻的快捷键守护进程。
-
-```bash
-./scripts/setup-skhd.sh
-```
-
-这个脚本会自动:`brew install skhd` → 启动服务 → 把配置写入 `~/.skhdrc` → 重载。
-
-默认快捷键 **`Cmd + Shift + T`** = 把剪贴板发到默认终端。改快捷键就编辑 `~/.skhdrc`。
-
-### 方式 B:右键 Services 菜单(macOS 原生,零额外依赖)
+<details>
+<summary>🖱️ 右键 Services 菜单详解</summary>
 
 ```bash
 ./scripts/setup-quickaction.sh
 ```
+装完后:**选中任意文字 → 右键 → 服务 → `Send to Terminal (clipcmd)`**
 
-装完后:**选中任意文字 → 右键 → 服务 → `Send to Terminal (clipcmd)`**。
+想给它加快捷键?系统设置 → 键盘 → 键盘快捷键 → 服务 → 找到 `Send to Terminal` → 双击添加。
+</details>
 
-> 想加快捷键?系统设置 → 键盘 → 键盘快捷键 → 服务 → 找到 `Send to Terminal` → 双击添加。
-
----
-
-## 命令识别规则
-
-`clipcmd` 默认会先判断剪贴板内容是否安全,采用**黑名单策略:默认放行,只拦危险命令**。这避免了你每遇到一个没收录的命令就被拦一次。
-
-| 判定 | 说明 |
-|---|---|
-| ✅ 默认放行 | 任何看起来像命令的文本都直接发(不再要求首词在白名单) |
-| ✅ 含 sudo 也放行 | 日常的 `sudo apt install` 这类正常放行 |
-| ❌ 破坏性命令 | `rm -rf /`、`rm -rf ~`、`dd ... of=/dev/...`、`mkfs.*`、`shred /dev/`、fork 炸弹、重定向写块设备 |
-| ❌ 密码/密钥 | 含 `password`/`token`/`secret`/`api_key`,或 `ghp_`/`sk-`/`AKIA`/`-----BEGIN` 前缀 |
-| ❌ 高熵长串 | 32+ 字符无空格且 Shannon 熵 ≥3.5(挡裸 token) |
-| ❌ 散文 / 超长 | 多行里混进非命令行、超过 5000 字符 |
-
-被拦了想强发?加 `--force`。规则见 [`CommandDetector.swift`](Sources/ClipCmdCore/CommandDetector.swift),误伤/漏拦欢迎开 Issue。
-
----
-
-## 卸载
+### 💻 命令行用法
 
 ```bash
-./scripts/uninstall.sh                # 卸载全部(二进制 + skhd 配置 + 右键菜单)
+clipcmd send "git push"              # 发命令到默认终端
+clipcmd send --from-clipboard        # 发当前剪贴板内容
+clipcmd send --app iterm "ls -la"    # 指定 iTerm2
+clipcmd send --mode current          # 在当前窗口追加(多行顺序执行)
+clipcmd send --force "任意文本"        # 跳过识别,强制发送
+clipcmd check "git push"             # 检测文本是否像命令
+clipcmd terminal list                # 列出已装终端
+```
+
+<details>
+<summary>所有参数</summary>
+
+```
+clipcmd send [<命令>] [选项]
+  <命令>              要执行的命令;省略则读剪贴板
+  -c, --from-clipboard 从剪贴板读取
+  -a, --app <名称>     目标终端:auto / iterm / terminal / warp / kitty / alacritty
+  --mode <模式>        tab(默认)/ window / current
+  -f, --force          跳过命令识别,强制发送
+```
+</details>
+
+### 🖥️ 支持的终端
+
+`auto` 模式按优先级自动选:**iTerm2** > Terminal.app > Warp > kitty > Alacritty
+
+| 终端 | 方式 | 备注 |
+|---|---|---|
+| **Terminal.app** | AppleScript `do script` | 系统自带,最稳 |
+| **iTerm2** | AppleScript `write text` | 支持新标签/新窗口/当前会话 |
+| **Warp** | keystroke 注入 | 需辅助功能权限 |
+| **kitty** | `kitty @ launch` | 远控需开启 |
+| **Alacritty** | `alacritty -e` | 每次开新窗口 |
+
+### 🛡️ 智能识别(默认放行,只拦危险)
+
+采用**黑名单策略**:正常命令全部放行,只拦截真正危险的操作。
+
+| 判定 | 例子 |
+|---|---|
+| ✅ **默认放行** | `pwd`、`my-tool`、任意像命令的文本 |
+| ✅ **含 sudo 也放行** | `sudo apt install nginx` |
+| ❌ **破坏性命令** | `rm -rf /`、`dd ... of=/dev/...`、`mkfs.*`、fork 炸弹 |
+| ❌ **密码/密钥** | `password=`、`ghp_xxx`、`sk-xxx`、PEM 私钥 |
+| ❌ **高熵长串** | 32+ 字符无空格(疑似 token) |
+
+被误拦?加 `--force`。规则见 [`CommandDetector.swift`](Sources/ClipCmdCore/CommandDetector.swift),欢迎开 Issue 调整。
+
+### 🔒 权限说明
+
+| 操作 | 是否弹授权 |
+|---|---|
+| 读剪贴板 | macOS ≤15.3 不弹;15.4+ 首次可能提示 |
+| 给终端发命令 | 首次弹「clipcmd 想控制 Terminal」一次性授权 |
+| skhd 全局快捷键 | 需「辅助功能」权限(脚本会引导) |
+
+clipcmd 复用 `osascript` 已有授权,**装完即用,无需逐个二进制授权**。
+
+### 🗑 卸载
+
+```bash
+./scripts/uninstall.sh                # 全部卸载
 ./scripts/uninstall.sh --core         # 仅删二进制
-./scripts/uninstall.sh --skhd         # 仅清 skhd 配置
+./scripts/uninstall.sh --skhd         # 仅清 skhd
 ./scripts/uninstall.sh --quickaction  # 仅删右键菜单
 ```
 
 ---
 
-## 支持的终端
-
-| 终端 | 实现 | 备注 |
-|---|---|---|
-| **Terminal.app** | `osascript` `do script` | 最稳,系统自带,零依赖 |
-| **iTerm2** | `osascript` `create tab` + `write text` | 处理「无窗口」自动建窗 |
-| **Warp** | activate + System Events keystroke | 需「辅助功能」权限,Warp 无 AppleScript 字典 |
-| **kitty** | `kitty @ launch` / `kitty sh -c` | 远控需实例开 `allow_remote_control` |
-| **Alacritty** | `alacritty -e sh -c` | 不可脚本化,每次开新窗口 |
-
-`auto` 模式优先级:iTerm2 > Terminal.app > Warp > kitty > Alacritty。
-
----
-
-## 权限说明
-
-| 操作 | 是否弹授权 |
-|---|---|
-| 读剪贴板(macOS ≤15.3) | 不弹 |
-| 读剪贴板(macOS 15.4+) | 首次可能弹「粘贴」提示 |
-| 给终端发 Apple Event | 首次弹「clipcmd 想控制 Terminal」一次性授权 |
-
-`clipcmd` **复用 `/usr/bin/osascript` 的已有授权**,而不是 in-process 发 Apple Event——所以 CLI 装完即用,不用每个二进制单独去 TCC 里点允许。
-
----
-
-## 开发
+## 🔧 开发
 
 ```bash
 swift build              # 编译
-swift test               # 跑测试(52 个,命令识别正反例)
+swift test               # 52 个测试
 swift run clipcmd --help # 直接跑
-swift build -c release   # 出 release 二进制
 ```
 
-**项目结构:**
+详见 [CONTRIBUTING.md](CONTRIBUTING.md)。项目结构、加新终端、调整识别规则都在里面。
 
-```
-clipcmd/
-├── Package.swift                 # SPM: ClipCmdCore(lib) + clipcmd(exec)
-├── Sources/
-│   ├── ClipCmdCore/              # 共享核心库
-│   │   ├── TerminalLauncher.swift    # 多终端派发(osascript / Process)
-│   │   ├── TerminalDetector.swift    # 检测已装终端
-│   │   ├── ClipboardMonitor.swift    # NSPasteboard 轮询(供菜单栏 App 用)
-│   │   └── CommandDetector.swift     # 命令识别(黑名单策略)
-│   └── clipcmd/                  # CLI 入口(ArgumentParser)
-├── Tests/ClipCmdCoreTests/       # 单元测试(52 例)
-├── Formula/clipcmd.rb            # Homebrew Formula
-└── .github/workflows/            # CI(test)+ Release(自动发版)
-```
+---
 
-## 贡献
+<div align="center">
 
-欢迎提 Issue、PR。详见 [CONTRIBUTING.md](CONTRIBUTING.md)。请遵守 [行为准则](CODE_OF_CONDUCT.md)。
+**MIT License** · Copyright © 2026 [guowenbiao](https://github.com/GGGWB)
 
-## License
+Made with ⌨️ on macOS
 
-MIT — 见 [LICENSE](LICENSE)
-
+</div>

@@ -12,7 +12,7 @@ class Clipcmd < Formula
   desc "把剪贴板里的命令,一键送到终端执行"
   homepage "https://github.com/GGGWB/clipcmd"
   url "https://github.com/GGGWB/clipcmd/releases/download/v0.1.0/clipcmd-darwin-arm64"
-  sha256 "PLACEHOLDER_REPLACE_AFTER_FIRST_RELEASE"
+  sha256 "fd36df5228a9b9a5437b929bc405159741797d218a4c7ed0c3354f6a6f86f25c"
   version "0.1.0"
   license "MIT"
 
