@@ -139,7 +139,7 @@ clipcmd terminal list                # 列出已装终端
 clipcmd send [<命令>] [选项]
   <命令>              要执行的命令;省略则读剪贴板
   -c, --from-clipboard 从剪贴板读取
-  -a, --app <名称>     目标终端:auto / iterm / terminal / warp / kitty / alacritty
+  -a, --app <名称>     目标终端:auto / terminal / iterm / ghostty / otty / warp / kitty / alacritty
   --mode <模式>        tab(默认)/ window / current
   -f, --force          跳过命令识别,强制发送
 ```
@@ -147,15 +147,41 @@ clipcmd send [<命令>] [选项]
 
 ### 🖥️ 支持的终端
 
-`auto` 模式按优先级自动选:**iTerm2** > Terminal.app > Warp > kitty > Alacritty
+`auto` 模式按优先级自动选(已装的里挑最稳的):**Terminal.app** > iTerm2 > Ghostty > Otty > Warp > kitty > Alacritty
 
-| 终端 | 方式 | 备注 |
-|---|---|---|
-| **Terminal.app** | AppleScript `do script` | 系统自带,最稳 |
-| **iTerm2** | AppleScript `write text` | 支持新标签/新窗口/当前会话 |
-| **Warp** | keystroke 注入 | 需辅助功能权限 |
-| **kitty** | `kitty @ launch` | 远控需开启 |
-| **Alacritty** | `alacritty -e` | 每次开新窗口 |
+| 终端 | `--app` 值 | 实现方式 | 备注 |
+|---|---|---|---|
+| **Terminal.app** | `terminal` | AppleScript `do script` | 系统自带,默认终端,最稳 |
+| **iTerm2** | `iterm` | AppleScript `write text` | 支持新标签/新窗口/当前会话 |
+| **Ghostty** | `ghostty` | `open -na --args -e` | 每次开新窗口 |
+| **Otty** | `otty` | `otty-cli` 远控 | 支持新窗口/新标签/当前会话 |
+| **Warp** | `warp` | keystroke 注入 | 需辅助功能权限 |
+| **kitty** | `kitty` | `kitty @ launch` | 远控需开启 |
+| **Alacritty** | `alacritty` | `alacritty -e` | 每次开新窗口 |
+
+### ⚙️ 如何更改默认终端
+
+**默认用 Terminal.app**(系统自带,零依赖)。想改成别的终端,有三种方式:
+
+**方式 1:单次指定(命令行加 `--app`)**
+```bash
+clipcmd send --app iterm "git push"       # 这次发到 iTerm2
+clipcmd send --app ghostty "ls -la"       # 这次发到 Ghostty
+```
+
+**方式 2:快捷键固定终端(改 skhdrc)**
+
+编辑 `~/.skhdrc` 里 clipcmd 那两行,加上 `--app`:
+```bash
+# 默认发到 iTerm2(而不是默认的 Terminal.app)
+cmd + shift - t : /opt/homebrew/bin/clipcmd send --app iterm --mode current
+cmd + shift - o : /opt/homebrew/bin/clipcmd send --app iterm
+```
+改完执行 `launchctl kickstart -k gui/$(id -u)/com.koekeishiya.skhd` 重载。
+
+**方式 3:右键菜单改终端**
+
+`scripts/Send to Terminal.workflow/Contents/document.wflow` 里的命令行加 `--app ghostty`,然后重跑 `./scripts/setup-quickaction.sh`。
 
 ### 🛡️ 智能识别(默认放行,只拦危险)
 

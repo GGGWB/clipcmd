@@ -2,8 +2,10 @@ import Foundation
 
 /// 支持的终端类型。
 public enum TerminalApp: String, CaseIterable, Sendable {
-    case iterm2 = "iTerm"
     case terminal = "Terminal"
+    case iterm2 = "iTerm"
+    case ghostty = "Ghostty"
+    case otty = "Otty"
     case warp = "Warp"
     case kitty = "kitty"
     case alacritty = "alacritty"
@@ -11,8 +13,10 @@ public enum TerminalApp: String, CaseIterable, Sendable {
     /// 给用户看的显示名。
     public var displayName: String {
         switch self {
-        case .iterm2: return "iTerm2"
         case .terminal: return "Terminal.app"
+        case .iterm2: return "iTerm2"
+        case .ghostty: return "Ghostty"
+        case .otty: return "Otty"
         case .warp: return "Warp"
         case .kitty: return "kitty"
         case .alacritty: return "Alacritty"
@@ -66,6 +70,10 @@ public enum TerminalLauncher {
             try runInTerminalApp(command: command, mode: mode)
         case .iterm2:
             try runInITerm2(command: command, mode: mode)
+        case .ghostty:
+            try runInGhostty(command: command, mode: mode)
+        case .otty:
+            try runInOtty(command: command, mode: mode)
         case .warp:
             try runInWarp(command: command, mode: mode)
         case .kitty:
@@ -78,7 +86,8 @@ public enum TerminalLauncher {
     // MARK: - 解析目标终端
 
     /// 把可能为 nil/"auto" 的输入解析成具体终端。
-    /// 优先级:iTerm2 > Terminal > Warp > kitty > Alacritty。
+    /// 优先级:Terminal > iTerm2 > Ghostty > Otty > Warp > kitty > Alacritty。
+    /// (Terminal 排第一,因为系统自带、零依赖、最稳)
     private static func resolveApp(_ app: TerminalApp?) throws -> TerminalApp {
         if let app { return app }
         // nil = auto:挑已装的
@@ -166,6 +175,57 @@ public enum TerminalLauncher {
             end tell
             """
             try executeAppleScript(script)
+        }
+    }
+
+    // MARK: - Ghostty
+
+    /// Ghostty 的 AppleScript 字典在当前版本(1.3.x)实现不完整,
+    /// `make new window` / `make new tab` / `input text` 都会报错。
+    /// 实测可靠的方式是 `open -na Ghostty.app --args -e "<命令>"`,
+    /// 这是 Ghostty 官方在 macOS 上推荐的启动方式。
+    /// 缺点:每次都开新窗口,Ghostty 当前不支持注入到已有会话。
+    private static func runInGhostty(command: String, mode: LaunchMode) throws {
+        guard TerminalDetector.bundlePath(for: .ghostty) != nil else {
+            throw TerminalLauncherError.notFound(.ghostty)
+        }
+        // mode 对 Ghostty 无实际意义(都开新窗口),统一处理
+        _ = mode
+        try runProcess(
+            launchPath: "/usr/bin/open",
+            arguments: ["-na", "Ghostty.app", "--args", "-e", command]
+        )
+    }
+
+    // MARK: - Otty(无 AppleScript,用 otty-cli 远控)
+
+    /// Otty 的 otty-cli 二进制路径(在 .app bundle 内)。
+    private static let ottyCLIPath = "/Applications/Otty.app/Contents/MacOS/otty-cli"
+
+    private static func runInOtty(command: String, mode: LaunchMode) throws {
+        guard FileManager.default.isExecutableFile(atPath: ottyCLIPath) else {
+            throw TerminalLauncherError.notFound(.otty)
+        }
+        switch mode {
+        case .window:
+            // otty-cli open [PATH] --command "<cmd>" —— 开新窗口跑命令
+            try runProcess(
+                launchPath: ottyCLIPath,
+                arguments: ["open", NSHomeDirectory(), "--command", command]
+            )
+        case .tab:
+            // otty-cli tab new --command "<cmd>" —— 在当前窗口开新标签
+            // 若没窗口,先 open 一个
+            try runProcess(
+                launchPath: ottyCLIPath,
+                arguments: ["tab", "new", "--command", command]
+            )
+        case .current:
+            // otty-cli pane send-keys "<cmd>" key:Enter —— 注入到当前 pane
+            try runProcess(
+                launchPath: ottyCLIPath,
+                arguments: ["pane", "send-keys", command, "key:Enter"]
+            )
         }
     }
 

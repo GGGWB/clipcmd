@@ -29,7 +29,7 @@ extension ClipCmd {
         @Flag(name: [.long, .customShort("c")], help: "从剪贴板读取命令(忽略位置参数)")
         var fromClipboard: Bool = false
 
-        @Option(name: .shortAndLong, help: "目标终端: auto/iterm/terminal/warp/kitty/alacritty")
+        @Option(name: .shortAndLong, help: "目标终端: auto/terminal/iterm/ghostty/otty/warp/kitty/alacritty")
         var app: String = "auto"
 
         @Option(help: "执行模式: tab/window/current")
@@ -93,13 +93,15 @@ extension ClipCmd {
     static func parseApp(_ raw: String) throws -> TerminalApp? {
         switch raw.lowercased() {
         case "auto": return nil
-        case "iterm", "iterm2": return .iterm2
         case "terminal": return .terminal
+        case "iterm", "iterm2": return .iterm2
+        case "ghostty": return .ghostty
+        case "otty": return .otty
         case "warp": return .warp
         case "kitty": return .kitty
         case "alacritty": return .alacritty
         default:
-            throw ValidationError("未知终端: \(raw)。可选: auto/iterm/terminal/warp/kitty/alacritty")
+            throw ValidationError("未知终端: \(raw)。可选: auto/terminal/iterm/ghostty/otty/warp/kitty/alacritty")
         }
     }
 

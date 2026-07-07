@@ -4,7 +4,10 @@ import Foundation
 public enum TerminalDetector {
 
     /// auto 模式下挑选终端的优先级(从高到低)。
-    public static let priorityOrder: [TerminalApp] = [.iterm2, .terminal, .warp, .kitty, .alacritty]
+    /// Terminal.app 排第一,因为系统自带、零依赖、最稳定,作为默认最稳妥。
+    public static let priorityOrder: [TerminalApp] = [
+        .terminal, .iterm2, .ghostty, .otty, .warp, .kitty, .alacritty,
+    ]
 
     /// 扫描路径(覆盖 /Applications、/System/Applications/Utilities 等系统位置)。
     private static let appSearchPaths: [String] = [
@@ -26,7 +29,7 @@ public enum TerminalDetector {
     /// 判断某个 GUI 终端 App 是否已安装。
     public static func isInstalled(_ app: TerminalApp) -> Bool {
         switch app {
-        case .iterm2, .terminal, .warp:
+        case .iterm2, .terminal, .warp, .ghostty, .otty:
             return bundlePath(for: app) != nil
         case .kitty:
             return executableExists("kitty")
@@ -42,6 +45,8 @@ public enum TerminalDetector {
         case .iterm2: appName = "iTerm.app"
         case .terminal: appName = "Terminal.app"
         case .warp: appName = "Warp.app"
+        case .ghostty: appName = "Ghostty.app"
+        case .otty: appName = "Otty.app"
         case .kitty, .alacritty: return nil  // CLI 类,不是 .app
         }
         for dir in appSearchPaths {
